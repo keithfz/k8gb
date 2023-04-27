@@ -18,6 +18,10 @@ spec:
         kubectl.kubernetes.io/default-container: k8gb
     spec:
       serviceAccountName: k8gb
+      {{- if .Values.k8gb.k8gbInitContainers }}
+      initContainers:
+        {{- toYaml .Values.k8gbInitContainers | nindent 8}}
+      {{- end }}
       containers:
         - name: k8gb
           ports:
