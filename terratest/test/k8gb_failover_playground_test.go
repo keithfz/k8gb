@@ -70,8 +70,8 @@ func TestFailoverPlayground(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	euLocalTargets := instanceEU.GetLocalTargets()
-	usLocalTargets := instanceUS.GetLocalTargets()
+	euLocalTargets := instanceEU.WaitForLocalTargets()
+	usLocalTargets := instanceUS.WaitForLocalTargets()
 
 	t.Run("stop podinfo on eu cluster", func(t *testing.T) {
 		instanceEU.StopTestApp()
