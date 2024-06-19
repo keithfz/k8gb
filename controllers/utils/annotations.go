@@ -33,3 +33,11 @@ func MergeAnnotations(target map[string]string, source map[string]string) map[st
 	}
 	return target
 }
+
+func CopyMap(target map[string]string) map[string]string {
+	m := make(map[string]string, len(target))
+	for k, v := range target {
+		m[k] = v
+	}
+	return m
+}

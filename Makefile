@@ -405,8 +405,6 @@ reset:	destroy-full-local-setup deploy-full-local-setup
 # run against the configured Kubernetes cluster in ~/.kube/config
 .PHONY: run
 run: lint
-	$(call generate)
-	$(call crd-manifest)
 	@echo -e "\n$(YELLOW)Running k8gb locally against the current k8s cluster$(NC)"
 	LOG_FORMAT=$(LOG_FORMAT) \
 	LOG_LEVEL=$(LOG_LEVEL) \
