@@ -23,6 +23,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/k8gb-io/k8gb/controllers/utils"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
 	"github.com/k8gb-io/k8gb/controllers/depresolver"
 
 	k8gbv1beta1 "github.com/k8gb-io/k8gb/api/v1beta1"
@@ -90,6 +94,19 @@ func (r *GslbReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&externaldns.DNSEndpoint{}).
 		Watches(&corev1.Endpoints{}, endpointMapHandler).
 		Watches(&netv1.Ingress{}, ingressMapHandler).
+		WithEventFilter(predicate.Funcs{
+			UpdateFunc: func(e event.TypedUpdateEvent[client.Object]) bool {
+				if e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration() {
+					return true
+				}
+				// Ignore reconciliation in case nothing has changed in k8gb annotations
+				oldAnnotations := e.ObjectOld.GetAnnotations()
+				newAnnotations := e.ObjectNew.GetAnnotations()
+				reconcile := !utils.EqualPredefinedAnnotations(oldAnnotations, newAnnotations,
+					strategyAnnotation, primaryGeoTagAnnotation, dnsTTLSecondsAnnotation, splitBrainThresholdSecondsAnnotation)
+				return reconcile
+			},
+		}).
 		Complete(r)
 }
 

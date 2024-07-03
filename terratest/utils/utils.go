@@ -256,6 +256,20 @@ func EqualStringSlices(a, b []string) bool {
 	return true
 }
 
+// EqualAnnotations compares annotations of two maps
+// TODO: redundant to k8gb utils internal function.
+func EqualAnnotations(a, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k := range a {
+		if b[k] != a[k] {
+			return false
+		}
+	}
+	return true
+}
+
 // RunBusyBoxCommand the command argument is executed inside the busybox pod. It can be for example an HTTP request etc.
 func RunBusyBoxCommand(t *testing.T, options *k8s.KubectlOptions, dns string, command []string) (out string, err error) {
 	dnsOverride := fmt.Sprintf("{\"spec\":{\"dnsConfig\":{\"nameservers\":[\"%s\"]},\"dnsPolicy\": \"None\"}}", dns)
