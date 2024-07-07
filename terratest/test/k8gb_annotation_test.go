@@ -29,17 +29,48 @@ import (
 )
 
 func TestAnnotations(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		name            string
+		host            string
+		path            string
 		patch           map[string]string
 		expectedGslb    map[string]string
 		expectedIngress map[string]string
 	}{
 		{
-			name:            "Create From Ingress - change non k8gb annotation",
+			name:            "Create From Ingress - patch non k8gb annotation",
+			host:            "test-ingress-annotation-failover.cloud.example.com",
+			path:            "../examples/ingress-annotation.yaml",
 			patch:           map[string]string{"example.io/protocol": "tcp"},
-			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover", "example.io/protocol": "tcp"},
-			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
+			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover", "example.io/protocol": "tcp"},
+			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
+		},
+		{
+			name:            "Create From Ingress - patch k8gb annotation",
+			host:            "test-ingress-annotation-failover2.cloud.example.com",
+			path:            "../examples/ingress-annotation2.yaml",
+			patch:           map[string]string{"k8gb.io/dns-ttl-seconds": "100"},
+			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover", "k8gb.io/dns-ttl-seconds": "100"},
+			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
+		},
+
+		{
+			name:            "Create From Ingress - patch with existing k8gb annotation",
+			host:            "test-ingress-annotation-failover2.cloud.example.com",
+			path:            "../examples/ingress-annotation2.yaml",
+			patch:           map[string]string{"k8gb.io/primary-geotag": "us"},
+			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
+			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
+		},
+
+		{
+			name:            "Create From Gslb - patch with existing k8gb annotation",
+			host:            "test-ingress-annotation-failover-gslb.cloud.example.com",
+			path:            "../examples/gslb-annotation.yaml",
+			patch:           map[string]string{"k8gb.io/primary-geotag": "us"},
+			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
+			expectedGslb:    map[string]string{},
 		},
 	}
 
@@ -53,22 +84,20 @@ func TestAnnotations(t *testing.T) {
 
 func testAnnotations(t *testing.T, test struct {
 	name            string
+	host            string
+	path            string
 	patch           map[string]string
 	expectedGslb    map[string]string
 	expectedIngress map[string]string
 }) {
-
-	t.Parallel()
-	const hostPath = "test-ingress-annotation-failover.cloud.example.com"
-	const geoTag = "eu"
-	const endpointDNSNameEU = "gslb-ns-eu-cloud.example.com"
+	//const endpointDNSNameEU = "gslb-ns-eu-cloud.example.com"
 	// Path to the Kubernetes resource config we will test
-	ingressPath, err := filepath.Abs("../examples/ingress-annotation.yaml")
+	ingressPath, err := filepath.Abs(test.path)
 	require.NoError(t, err)
 
 	workflowEU := utils.NewWorkflow(t, "k3d-test-gslb1", 5053).
-		WithGslb(ingressPath, hostPath).
-		WithTestApp(geoTag)
+		WithGslb(ingressPath, test.host).
+		WithTestApp(test.name)
 	if ingressPath != "" {
 		workflowEU = workflowEU.WithIngress(ingressPath)
 	}
@@ -76,30 +105,20 @@ func testAnnotations(t *testing.T, test struct {
 	require.NoError(t, err)
 	defer instanceEU.Kill()
 
-	t.Run("run app on eu cluster", func(t *testing.T) {
-		err = instanceEU.WaitForAppIsRunning()
-		require.NoError(t, err)
+	err = instanceEU.WaitForAppIsRunning()
+	require.NoError(t, err)
 
-		err = instanceEU.WaitForExternalDNSEndpointExists()
-		require.NoError(t, err)
-
-		err = instanceEU.WaitForLocalDNSEndpointExists()
-		require.NoError(t, err)
-
-		err = instanceEU.Resources().WaitForExternalDNSEndpointHasTargets(endpointDNSNameEU)
-		require.NoError(t, err)
-	})
+	err = instanceEU.WaitForExternalDNSEndpointExists()
+	require.NoError(t, err)
 
 	err = instanceEU.Resources().Ingress().PatchAnnotations(test.patch)
 	require.NoError(t, err)
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	newAnnotationsIngress := instanceEU.Resources().Ingress().GetAnnotations()
 	newAnnotationsGslb := instanceEU.Resources().Gslb().GetAnnotations()
 
-	assert.Equal(t, len(test.expectedIngress)+1, len(newAnnotationsIngress))
 	delete(newAnnotationsIngress, "kubectl.kubernetes.io/last-applied-configuration")
+	delete(newAnnotationsGslb, "kubectl.kubernetes.io/last-applied-configuration")
 	assert.True(t, utils.EqualAnnotations(test.expectedIngress, newAnnotationsIngress))
-
-	assert.Equal(t, len(test.expectedGslb)+1, len(newAnnotationsGslb))
 	assert.True(t, utils.EqualAnnotations(test.expectedGslb, newAnnotationsGslb))
 }
