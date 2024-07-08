@@ -63,15 +63,6 @@ func TestAnnotations(t *testing.T) {
 			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
 			expectedGslb:    map[string]string{},
 		},
-
-		//{
-		//	name:            "Create From Gslb - patch with existing k8gb annotation",
-		//	host:            "test-ingress-annotation-failover-gslb.cloud.example.com",
-		//	path:            "../examples/gslb-annotation.yaml",
-		//	patch:           map[string]string{"k8gb.io/primary-geotag": "us"},
-		//	expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
-		//	expectedGslb:    map[string]string{},
-		//},
 	}
 
 	for _, test := range tests {

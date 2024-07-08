@@ -105,34 +105,7 @@ func (r *GslbReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				newAnnotations := e.ObjectNew.GetAnnotations()
 				reconcile := !utils.EqualPredefinedAnnotations(oldAnnotations, newAnnotations,
 					strategyAnnotation, primaryGeoTagAnnotation, dnsTTLSecondsAnnotation, splitBrainThresholdSecondsAnnotation)
-
-				if reconcile {
-					if _, found := newAnnotations[strategyAnnotation]; !found {
-						return false
-					}
-					strategy, _ := r.parseStrategy(newAnnotations, newAnnotations[strategyAnnotation])
-					c := mgr.GetClient()
-					gslb := &k8gbv1beta1.Gslb{}
-					err := c.Get(context.Background(), client.ObjectKey{
-						Namespace: e.ObjectNew.GetNamespace(),
-						Name:      e.ObjectNew.GetName(),
-					}, gslb)
-					if err != nil {
-						log.Err(err).
-							Str("gslb", gslb.Name).
-							Msg("Can't find GSLB when updating Ingress annotations")
-						return false
-					}
-					gslb.Spec.Strategy = strategy
-					if err = c.Update(context.Background(), gslb); err != nil {
-						log.Err(err).
-							Str("gslb", gslb.Name).
-							Msg("Can't update GSLB with new Ingress annotations")
-						return false
-					}
-					return true
-				}
-				return false
+				return reconcile
 			},
 		}).
 		Complete(r)
