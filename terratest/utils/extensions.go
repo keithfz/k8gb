@@ -432,7 +432,7 @@ func (i *Instance) waitForApp(predicate func(instances int) bool, stop bool) (er
 	i.w.t.Logf("Wait for ExternalDNSEndpoint %s.%s to be filled by targets %s", i.w.state.gslb.name, i.w.namespace, i.w.state.gslb.host)
 	// second conditions
 	for n := 0; n < maxRetries/2; n++ {
-		ep, err := i.Resources().GetExternalDNSEndpointByName(i.w.state.gslb.name, i.w.namespace).GetEndpointByName("localtargets-" + i.w.state.gslb.host)
+		ep, err := i.Resources().GetExternalDNSEndpointByName(i.w.state.gslb.name, i.w.namespace).GetEndpointByName(i.w.state.gslb.host)
 		if err != nil {
 			// app is already stopped and cant be found
 			if stop && err.Error() == notFoundError {

@@ -143,7 +143,7 @@ func (r *GslbReconciler) createGSLBFromIngress(c client.Client, a client.Object,
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: a.GetNamespace(),
 			Name:      a.GetName(),
-			//	Annotations: a.GetAnnotations(),
+			// Annotations: a.GetAnnotations(),
 		},
 		Spec: k8gbv1beta1.GslbSpec{
 			Ingress: k8gbv1beta1.FromV1IngressSpec(ingressToReuse.Spec),
