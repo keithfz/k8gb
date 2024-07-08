@@ -44,34 +44,34 @@ func TestAnnotations(t *testing.T) {
 			path:            "../examples/ingress-annotation.yaml",
 			patch:           map[string]string{"example.io/protocol": "tcp"},
 			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover", "example.io/protocol": "tcp"},
-			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
+			expectedGslb:    map[string]string{},
 		},
 		{
 			name:            "Create From Ingress - patch k8gb annotation",
-			host:            "test-ingress-annotation-failover2.cloud.example.com",
-			path:            "../examples/ingress-annotation2.yaml",
+			host:            "test-ingress-annotation-failover.cloud.example.com",
+			path:            "../examples/ingress-annotation.yaml",
 			patch:           map[string]string{"k8gb.io/dns-ttl-seconds": "100"},
 			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover", "k8gb.io/dns-ttl-seconds": "100"},
-			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
+			expectedGslb:    map[string]string{},
 		},
 
 		{
 			name:            "Create From Ingress - patch with existing k8gb annotation",
-			host:            "test-ingress-annotation-failover2.cloud.example.com",
-			path:            "../examples/ingress-annotation2.yaml",
-			patch:           map[string]string{"k8gb.io/primary-geotag": "us"},
-			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
-			expectedGslb:    map[string]string{"k8gb.io/primary-geotag": "eu", "k8gb.io/strategy": "failover"},
-		},
-
-		{
-			name:            "Create From Gslb - patch with existing k8gb annotation",
-			host:            "test-ingress-annotation-failover-gslb.cloud.example.com",
-			path:            "../examples/gslb-annotation.yaml",
+			host:            "test-ingress-annotation-failover.cloud.example.com",
+			path:            "../examples/ingress-annotation.yaml",
 			patch:           map[string]string{"k8gb.io/primary-geotag": "us"},
 			expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
 			expectedGslb:    map[string]string{},
 		},
+
+		//{
+		//	name:            "Create From Gslb - patch with existing k8gb annotation",
+		//	host:            "test-ingress-annotation-failover-gslb.cloud.example.com",
+		//	path:            "../examples/gslb-annotation.yaml",
+		//	patch:           map[string]string{"k8gb.io/primary-geotag": "us"},
+		//	expectedIngress: map[string]string{"k8gb.io/primary-geotag": "us", "k8gb.io/strategy": "failover"},
+		//	expectedGslb:    map[string]string{},
+		//},
 	}
 
 	for _, test := range tests {

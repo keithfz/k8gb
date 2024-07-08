@@ -99,12 +99,40 @@ func (r *GslbReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				if e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration() {
 					return true
 				}
+
 				// Ignore reconciliation in case nothing has changed in k8gb annotations
 				oldAnnotations := e.ObjectOld.GetAnnotations()
 				newAnnotations := e.ObjectNew.GetAnnotations()
 				reconcile := !utils.EqualPredefinedAnnotations(oldAnnotations, newAnnotations,
 					strategyAnnotation, primaryGeoTagAnnotation, dnsTTLSecondsAnnotation, splitBrainThresholdSecondsAnnotation)
-				return reconcile
+
+				if reconcile {
+					if _, found := newAnnotations[strategyAnnotation]; !found {
+						return false
+					}
+					strategy, _ := r.parseStrategy(newAnnotations, newAnnotations[strategyAnnotation])
+					c := mgr.GetClient()
+					gslb := &k8gbv1beta1.Gslb{}
+					err := c.Get(context.Background(), client.ObjectKey{
+						Namespace: e.ObjectNew.GetNamespace(),
+						Name:      e.ObjectNew.GetName(),
+					}, gslb)
+					if err != nil {
+						log.Err(err).
+							Str("gslb", gslb.Name).
+							Msg("Can't find GSLB when updating Ingress annotations")
+						return false
+					}
+					gslb.Spec.Strategy = strategy
+					if err = c.Update(context.Background(), gslb); err != nil {
+						log.Err(err).
+							Str("gslb", gslb.Name).
+							Msg("Can't update GSLB with new Ingress annotations")
+						return false
+					}
+					return true
+				}
+				return false
 			},
 		}).
 		Complete(r)
@@ -140,9 +168,9 @@ func (r *GslbReconciler) createGSLBFromIngress(c client.Client, a client.Object,
 	}
 	gslb := &k8gbv1beta1.Gslb{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   a.GetNamespace(),
-			Name:        a.GetName(),
-			Annotations: a.GetAnnotations(),
+			Namespace: a.GetNamespace(),
+			Name:      a.GetName(),
+			//	Annotations: a.GetAnnotations(),
 		},
 		Spec: k8gbv1beta1.GslbSpec{
 			Ingress: k8gbv1beta1.FromV1IngressSpec(ingressToReuse.Spec),
