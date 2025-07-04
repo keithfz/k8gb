@@ -30,9 +30,9 @@ Remember to change the zone-related values to point configuration to your own DN
 
 ```yaml
 k8gb:
-  dnsZone: "cloudflare-test.k8gb.io"
-  # -- main zone which would contain gslb zone to delegate
-  edgeDNSZone: "k8gb.io" # main zone which would contain gslb zone to delegate
+  dnsZones:
+  - parentZone: "k8gb.io"
+    loadBalancedZone: "cloudflare-test.k8gb.io"
 ```
 
 ### Cloudflare-specific configuration
@@ -93,7 +93,6 @@ spec:
   strategy:
     dnsTtlSeconds: 60 # Minimum for non-Enterprise Cloudflare https://developers.cloudflare.com/dns/manage-dns-records/reference/ttl/
     primaryGeoTag: eu
-    splitBrainThresholdSeconds: 300
     type: failover
 ```
 
@@ -117,7 +116,7 @@ $ kubectl -n k8gb get dnsendpoints.externaldns.k8s.io k8gb-ns-extdns -o yaml
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
-  annotations:
+  labels:
     k8gb.absa.oss/dnstype: extdns
   creationTimestamp: "2023-11-12T19:55:20Z"
   generation: 3
